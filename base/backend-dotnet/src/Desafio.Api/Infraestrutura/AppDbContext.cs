@@ -27,6 +27,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entidade.Property(b => b.NomeCompleto).HasMaxLength(120).IsRequired();
             entidade.Property(b => b.Cpf).HasMaxLength(11).IsRequired();
             entidade.Property(b => b.Status).HasConversion<string>().HasMaxLength(10).IsRequired();
+            entidade.Property(b => b.DataNascimento).HasConversion(v => v.ToDateTime(TimeOnly.MinValue),
+                v => DateOnly.FromDateTime(v)).IsRequired();
+            entidade.Property(b => b.DataCadastro).IsRequired();
+            entidade.Property(b => b.ExcluidoEm);
+            entidade.HasIndex(b => b.Cpf).IsUnique();
+            entidade.HasQueryFilter(b => b.ExcluidoEm == null);
             entidade.HasOne(b => b.Plano)
                 .WithMany()
                 .HasForeignKey(b => b.PlanoId)
