@@ -1,0 +1,55 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace Desafio.Api.Infraestrutura.Migrations
+{
+    /// <inheritdoc />
+    public partial class AdicionarIndiceCpfEFiltroExclusaoBeneficiario : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AlterColumn<DateTime>(
+                name: "DataNascimento",
+                table: "Beneficiarios",
+                type: "timestamp with time zone",
+                nullable: false,
+                oldClrType: typeof(DateOnly),
+                oldType: "date");
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "ExcluidoEm",
+                table: "Beneficiarios",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Beneficiarios_Cpf",
+                table: "Beneficiarios",
+                column: "Cpf",
+                unique: true);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropIndex(
+                name: "IX_Beneficiarios_Cpf",
+                table: "Beneficiarios");
+
+            migrationBuilder.DropColumn(
+                name: "ExcluidoEm",
+                table: "Beneficiarios");
+
+            migrationBuilder.AlterColumn<DateOnly>(
+                name: "DataNascimento",
+                table: "Beneficiarios",
+                type: "date",
+                nullable: false,
+                oldClrType: typeof(DateTime),
+                oldType: "timestamp with time zone");
+        }
+    }
+}
