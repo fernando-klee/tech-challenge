@@ -1,7 +1,7 @@
+using Desafio.Api.Api.Contratos;
+using Desafio.Api.Aplicacao;
 using Desafio.Api.Dominio;
-using Desafio.Api.Infraestrutura;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Desafio.Api.Controllers;
 
@@ -10,76 +10,89 @@ namespace Desafio.Api.Controllers;
 [Produces("application/json")]
 public class BeneficiariosController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly BeneficiarioServico _servico;
 
-    public BeneficiariosController(AppDbContext db)
+    public BeneficiariosController(BeneficiarioServico servico)
     {
-        _db = db;
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Criar([FromBody] Beneficiario beneficiario)
-    {
-        var existe = await _db.Beneficiarios.AnyAsync(b => b.Cpf == beneficiario.Cpf);
-        if (existe)
-            return BadRequest(new { mensagem = "CPF já cadastrado" });
-
-        _db.Beneficiarios.Add(beneficiario);
-        await _db.SaveChangesAsync();
-
-        // Recarrega com o plano (opcional, mas evita atribuição manual)
-        await _db.Entry(beneficiario).Reference(b => b.Plano).LoadAsync();
-
-        return CreatedAtAction(nameof(Obter), new { id = beneficiario.Id }, beneficiario);
-
-        //if (beneficiario.Cpf.Length == 11)
-        //{
-        //    // Mesmo modelo do PlanoServico: a garantia de unicidade é o índice único da
-        //    // tabela, e esta consulta prévia existe só para recusar o pedido antes de ele
-        //    // chegar no banco.
-        //    var existe = _db.Beneficiarios.Any(b => b.Cpf == beneficiario.Cpf);
-
-        //    if (!existe)
-        //    {
-        //        _db.Beneficiarios.Add(beneficiario);
-        //        await _db.SaveChangesAsync();
-
-        //        return Ok(beneficiario);
-        //    }
-
-        //    return BadRequest("CPF ja cadastrado");
-        //}
-
-        //return BadRequest("CPF invalido");
+        _servico = servico;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Listar()
+    [ProducesResponseType<IEnumerable<BeneficiarioResponse>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Listar(CancellationToken cancellationToken)
     {
-        var lista = await _db.Beneficiarios.Include(b => b.Plano).ToListAsync();
-
-        // O plano é resolvido aqui, e não na consulta principal, porque o FindAsync usa o
-        // cache do contexto: a listagem continua fazendo uma única ida ao banco, qualquer
-        // que seja o tamanho da página.
-
-        //foreach (var b in lista)
-        //{
-        //    b.Plano = await _db.Planos.FindAsync(b.PlanoId);
-        //}
-
-        return Ok(lista);
+        var beneficiarios = await _servico.ListarAsync(cancellationToken);
+        return Ok(beneficiarios.Select(BeneficiarioResponse.De).ToList());
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> Obter(Guid id)
+    [ProducesResponseType<BeneficiarioResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
     {
-        var beneficiario = await _db.Beneficiarios
-            .Include(b => b.Plano)
-            .FirstOrDefaultAsync(b => b.Id == id);
+        var beneficiario = await _servico.ObterPorIdAsync(id, cancellationToken);
+        return Ok(BeneficiarioResponse.De(beneficiario));
+    }
 
-        if (beneficiario == null)
-            return NotFound();
+    [HttpPost]
+    [ProducesResponseType<BeneficiarioResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Criar(
+        [FromBody] BeneficiarioRequest requisicao,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var beneficiario = await _servico.CriarAsync(requisicao, cancellationToken);
+            var response = BeneficiarioResponse.De(beneficiario);
+            return CreatedAtAction(nameof(Obter), new { id = response.Id }, response);
+        }
+        catch (ConflitoException ex) when (ex.Detalhes.Any(d => d.Campo == "plano_id"))
+        {
+            // Plano inexistente → 422
+            return UnprocessableEntity(new ErroResponse(
+                "plano_inexistente",
+                ex.Message,
+                ex.Detalhes
+            ));
+        }
+        // Outras ConflitoException (CPF duplicado) serão capturadas pelo middleware e retornarão 409.
+    }
 
-        return Ok(beneficiario);
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType<BeneficiarioResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Atualizar(
+        Guid id,
+        [FromBody] BeneficiarioRequest requisicao,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var beneficiario = await _servico.AtualizarAsync(id, requisicao, cancellationToken);
+            return Ok(BeneficiarioResponse.De(beneficiario));
+        }
+        catch (ConflitoException ex) when (ex.Detalhes.Any(d => d.Campo == "plano_id"))
+        {
+            return UnprocessableEntity(new ErroResponse(
+                "plano_inexistente",
+                ex.Message,
+                ex.Detalhes
+            ));
+        }
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Excluir(Guid id, CancellationToken cancellationToken)
+    {
+        await _servico.ExcluirAsync(id, cancellationToken);
+        return NoContent();
     }
 }
