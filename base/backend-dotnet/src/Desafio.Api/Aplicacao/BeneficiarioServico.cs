@@ -58,23 +58,28 @@ public class BeneficiarioServico(AppDbContext db)
     }
 
     public async Task<Beneficiario> AtualizarAsync(
-        Guid id,
-        BeneficiarioRequest dados,
-        CancellationToken cancellationToken)
+    Guid id,
+    BeneficiarioUpdateRequest dados,
+    CancellationToken cancellationToken)
     {
         var beneficiario = await ObterPorIdAsync(id, cancellationToken);
 
-        // Atualiza dados (nome, data, planoId) e opcionalmente status
+        // Valida se o plano existe (422)
+        var planoExiste = await db.Planos.AnyAsync(p => p.Id == dados.PlanoId, cancellationToken);
+        if (!planoExiste)
+            throw new ConflitoException(
+                "Plano não encontrado",
+                [new DetalheErro("plano_id", "inexistente")]
+            );
+
         beneficiario.AtualizarDados(
             dados.NomeCompleto,
             dados.DataNascimento,
             dados.PlanoId,
-            dados.Status // opcional, se enviado
+            dados.Status
         );
 
         await SalvarAsync(cancellationToken);
-
-        // Recarrega o plano
         await db.Entry(beneficiario).Reference(b => b.Plano).LoadAsync(cancellationToken);
 
         return beneficiario;
