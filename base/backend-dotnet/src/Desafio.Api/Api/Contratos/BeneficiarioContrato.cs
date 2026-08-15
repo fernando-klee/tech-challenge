@@ -6,8 +6,14 @@ public sealed record BeneficiarioRequest(
     string NomeCompleto,
     string Cpf,
     DateOnly DataNascimento,
+    Guid PlanoId
+);
+
+public sealed record BeneficiarioUpdateRequest(
+    string NomeCompleto,
+    DateOnly DataNascimento,
     Guid PlanoId,
-    StatusBeneficiario? Status = null // opcional – usado no PUT
+    StatusBeneficiario? Status = null
 );
 
 public sealed record BeneficiarioResponse(
