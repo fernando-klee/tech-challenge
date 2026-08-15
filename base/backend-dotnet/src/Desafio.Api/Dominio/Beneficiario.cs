@@ -94,12 +94,15 @@ public partial class Beneficiario
 
     public void Excluir() => ExcluidoEm = DateTime.UtcNow;
 
-    public void AtualizarDados(string? nomeCompleto, DateOnly dataNascimento, Guid planoId,
-    StatusBeneficiario? status = null)
+    public void AtualizarDados(string? nomeCompleto, DateOnly dataNascimento, Guid planoId, StatusBeneficiario? status = null)
     {
-        if (Status == StatusBeneficiario.INATIVO && (nomeCompleto != null || dataNascimento != default || planoId != Guid.Empty))
+        bool alterouNome = nomeCompleto != null && nomeCompleto.Trim() != NomeCompleto;
+        bool alterouData = dataNascimento != default && dataNascimento != DataNascimento;
+        bool alterouPlano = planoId != Guid.Empty && planoId != PlanoId;
+
+        if (Status == StatusBeneficiario.INATIVO && (alterouNome || alterouData || alterouPlano))
         {
-            throw new ValidacaoException("Beneficiário inativo não pode ter dados alterados", new List<DetalheErro>
+            throw new ValidacaoException("Beneficiario inativo nao pode ter dados alterados", new List<DetalheErro>
         {
             new DetalheErro("status", "inativo_nao_permite_alteracao")
         });
@@ -111,11 +114,11 @@ public partial class Beneficiario
 
         ValidarDados(nomeParaValidar, dataParaValidar, planoIdParaValidar);
 
-        NomeCompleto = nomeParaValidar;
-        DataNascimento = dataParaValidar;
-        PlanoId = planoIdParaValidar;
+        if (alterouNome) NomeCompleto = nomeCompleto!.Trim();
+        if (alterouData) DataNascimento = dataNascimento;
+        if (alterouPlano) PlanoId = planoId;
 
-        if (status.HasValue)
+        if (status.HasValue && status.Value != Status)
             Status = status.Value;
     }
 
