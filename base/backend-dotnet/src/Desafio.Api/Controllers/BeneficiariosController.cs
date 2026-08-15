@@ -68,9 +68,9 @@ public class BeneficiariosController : ControllerBase
     [ProducesResponseType<ErroResponse>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ErroResponse>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Atualizar(
-        Guid id,
-        [FromBody] BeneficiarioRequest requisicao,
-        CancellationToken cancellationToken)
+    Guid id,
+    [FromBody] BeneficiarioUpdateRequest requisicao,
+    CancellationToken cancellationToken)
     {
         try
         {
@@ -79,11 +79,7 @@ public class BeneficiariosController : ControllerBase
         }
         catch (ConflitoException ex) when (ex.Detalhes.Any(d => d.Campo == "plano_id"))
         {
-            return UnprocessableEntity(new ErroResponse(
-                "plano_inexistente",
-                ex.Message,
-                ex.Detalhes
-            ));
+            return UnprocessableEntity(new ErroResponse("plano_inexistente", ex.Message, ex.Detalhes));
         }
     }
 
