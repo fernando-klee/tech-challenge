@@ -24,7 +24,7 @@ public class BeneficiariosController : ControllerBase
     [FromQuery] int pagina = 1,
     [FromQuery] int tamanho = 10,
     [FromQuery] StatusBeneficiario? status = null,
-    [FromQuery] Guid? planoId = null,
+    [FromQuery(Name = "plano_id")] Guid? planoId = null,
     CancellationToken cancellationToken = default)
     {
         try
