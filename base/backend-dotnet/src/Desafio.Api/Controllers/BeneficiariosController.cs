@@ -18,11 +18,28 @@ public class BeneficiariosController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType<IEnumerable<BeneficiarioResponse>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Listar(CancellationToken cancellationToken)
+    [ProducesResponseType<BeneficiarioListResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErroResponse>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Listar(
+    [FromQuery] int pagina = 1,
+    [FromQuery] int tamanho = 10,
+    [FromQuery] StatusBeneficiario? status = null,
+    [FromQuery] Guid? planoId = null,
+    CancellationToken cancellationToken = default)
     {
-        var beneficiarios = await _servico.ListarAsync(cancellationToken);
-        return Ok(beneficiarios.Select(BeneficiarioResponse.De).ToList());
+        try
+        {
+            var resultado = await _servico.ListarAsync(pagina, tamanho, status, planoId, cancellationToken);
+            return Ok(resultado);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErroResponse(
+                "ParametroInvalido",
+                ex.Message,
+                new[] { new DetalheErro(ex.ParamName ?? "parametro", "invalido") }
+            ));
+        }
     }
 
     [HttpGet("{id:guid}")]
