@@ -10,13 +10,38 @@ public class BeneficiarioServico(AppDbContext db)
 {
     private const string CodigoViolacaoDeUnicidade = "23505";
 
-    public async Task<IReadOnlyList<Beneficiario>> ListarAsync(CancellationToken cancellationToken)
+    public async Task<BeneficiarioListResponse> ListarAsync(
+     int pagina,
+     int tamanho,
+     StatusBeneficiario? status,
+     Guid? planoId,
+     CancellationToken cancellationToken)
     {
-        return await db.Beneficiarios
+        if (pagina < 1)
+            throw new ArgumentException("Pagina deve ser maior ou igual a 1", nameof(pagina));
+        if (tamanho < 1 || tamanho > 100)
+            throw new ArgumentException("Tamanho deve estar entre 1 e 100", nameof(tamanho));
+
+        var query = db.Beneficiarios
             .AsNoTracking()
             .Include(b => b.Plano)
-            .OrderBy(b => b.NomeCompleto)
+            .AsQueryable();
+
+        if (status.HasValue)
+            query = query.Where(b => b.Status == status.Value);
+        if (planoId.HasValue)
+            query = query.Where(b => b.PlanoId == planoId.Value);
+
+        query = query.OrderBy(b => b.NomeCompleto).ThenBy(b => b.Id);
+
+        var total = await query.CountAsync(cancellationToken);
+        var dados = await query
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
             .ToListAsync(cancellationToken);
+
+        var response = dados.Select(BeneficiarioResponse.De).ToList();
+        return new BeneficiarioListResponse(response, pagina, tamanho, total);
     }
 
     public async Task<Beneficiario> ObterPorIdAsync(Guid id, CancellationToken cancellationToken)
@@ -29,7 +54,6 @@ public class BeneficiarioServico(AppDbContext db)
 
     public async Task<Beneficiario> CriarAsync(BeneficiarioRequest dados, CancellationToken cancellationToken)
     {
-        // 1. Verifica se o plano existe (422)
         var planoExiste = await db.Planos.AnyAsync(p => p.Id == dados.PlanoId, cancellationToken);
         if (!planoExiste)
             throw new ConflitoException(
@@ -37,7 +61,6 @@ public class BeneficiarioServico(AppDbContext db)
                 [new DetalheErro("plano_id", "inexistente")]
             );
 
-        // 2. Cria a entidade (validações de domínio são disparadas no construtor)
         var beneficiario = new Beneficiario(
             dados.NomeCompleto,
             dados.Cpf,
@@ -45,13 +68,11 @@ public class BeneficiarioServico(AppDbContext db)
             dados.PlanoId
         );
 
-        // 3. Garante unicidade (consulta prévia, mas a garantia real é o índice único)
         await GarantirUnicidadeAsync(beneficiario, cancellationToken);
 
         db.Beneficiarios.Add(beneficiario);
         await SalvarAsync(cancellationToken);
 
-        // 4. Carrega o plano para a resposta (opcional, mas útil)
         await db.Entry(beneficiario).Reference(b => b.Plano).LoadAsync(cancellationToken);
 
         return beneficiario;
