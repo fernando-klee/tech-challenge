@@ -220,8 +220,8 @@ public class BeneficiariosTests(ApiFixture fixture) : IAsyncLifetime
 
         var corpo = await (await Client.GetAsync("/beneficiarios")).CorpoAsync();
 
-        Assert.Equal(20, corpo.GetProperty("dados").GetArrayLength());
-        Assert.Equal(20, corpo.GetProperty("tamanho").GetInt32());
+        Assert.Equal(10, corpo.GetProperty("dados").GetArrayLength());
+        Assert.Equal(10, corpo.GetProperty("tamanho").GetInt32());
         Assert.Equal(25, corpo.GetProperty("total").GetInt32());
     }
 
@@ -239,9 +239,9 @@ public class BeneficiariosTests(ApiFixture fixture) : IAsyncLifetime
             Status = "INATIVO"
         }));
 
-        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resposta.StatusCode);
 
         var corpo = await resposta.CorpoAsync();
-        Assert.Equal("Nome Corrigido do Inativo", corpo.GetProperty("nome_completo").GetString());
+        Assert.Equal("Beneficiario inativo nao pode ter dados alterados", corpo.GetProperty("mensagem").GetString());
     }
 }
