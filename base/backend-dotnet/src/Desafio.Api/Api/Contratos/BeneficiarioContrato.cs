@@ -16,6 +16,13 @@ public sealed record BeneficiarioUpdateRequest(
     StatusBeneficiario? Status = null
 );
 
+public sealed record BeneficiarioListResponse(
+    IReadOnlyList<BeneficiarioResponse> Dados,
+    int Pagina,
+    int Tamanho,
+    int Total
+);
+
 public sealed record BeneficiarioResponse(
     Guid Id,
     string NomeCompleto,
