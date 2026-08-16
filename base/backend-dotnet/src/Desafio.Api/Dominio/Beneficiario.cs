@@ -102,10 +102,10 @@ public partial class Beneficiario
 
         if (Status == StatusBeneficiario.INATIVO && (alterouNome || alterouData || alterouPlano))
         {
-            throw new ValidacaoException("Beneficiario inativo nao pode ter dados alterados", new List<DetalheErro>
-        {
-            new DetalheErro("status", "inativo_nao_permite_alteracao")
-        });
+            throw new ConflitoException(
+                "Beneficiario inativo nao pode ter dados alterados",
+                new List<DetalheErro> { new DetalheErro("status", "inativo_nao_permite_alteracao") }
+            );
         }
 
         var nomeParaValidar = nomeCompleto ?? NomeCompleto;
