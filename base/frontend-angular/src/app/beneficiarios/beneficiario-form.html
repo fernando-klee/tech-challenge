@@ -23,7 +23,7 @@
     <!-- CPF -->
     <div class="campo">
       <label for="cpf">CPF</label>
-      <input id="cpf" formControlName="cpf" type="text" [disabled]="isEdit()" />
+      <input id="cpf" formControlName="cpf" type="text" />
       @if (form.get('cpf')?.invalid && form.get('cpf')?.touched) {
       <span class="erro-campo">CPF deve ter exatamente 11 dígitos numéricos.</span>
       }

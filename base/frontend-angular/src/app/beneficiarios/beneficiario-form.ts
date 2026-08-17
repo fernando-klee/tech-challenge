@@ -39,7 +39,7 @@ export class BeneficiarioFormComponent implements OnDestroy {
   constructor() {
     this.form = this.fb.group({
       nome_completo: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
-      cpf: ['', [Validators.required, Validators.pattern(/^[0-9]{11}$/)]],
+      cpf: [{ value: '', disabled: this.isEdit() }, [Validators.required, Validators.pattern(/^[0-9]{11}$/)]],
       data_nascimento: ['', [Validators.required, this.dataPassadaValidator]],
       plano_id: ['', Validators.required],
       status: ['ATIVO']
