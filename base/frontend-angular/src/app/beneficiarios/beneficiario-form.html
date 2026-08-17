@@ -1,0 +1,76 @@
+<section class="cartao">
+  <header class="cabecalho">
+    <h2>{{ isEdit() ? 'Editar' : 'Novo' }} Beneficiário</h2>
+    <button type="button" (click)="cancelar()" [disabled]="carregando()">Voltar</button>
+  </header>
+
+  <!-- Loading -->
+  @if (carregando()) {
+  <p class="aviso">Carregando...</p>
+  } @else if (erro()) {
+  <p class="aviso erro">{{ erro() }}</p>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="salvar()" class="formulario">
+    <!-- Nome -->
+    <div class="campo">
+      <label for="nome">Nome Completo</label>
+      <input id="nome" formControlName="nome_completo" type="text" />
+      @if (form.get('nome_completo')?.invalid && form.get('nome_completo')?.touched) {
+      <span class="erro-campo">Nome deve ter entre 3 e 120 caracteres.</span>
+      }
+    </div>
+
+    <!-- CPF -->
+    <div class="campo">
+      <label for="cpf">CPF</label>
+      <input id="cpf" formControlName="cpf" type="text" [disabled]="isEdit()" />
+      @if (form.get('cpf')?.invalid && form.get('cpf')?.touched) {
+      <span class="erro-campo">CPF deve ter exatamente 11 dígitos numéricos.</span>
+      }
+      @if (isEdit()) {
+      <span class="ajuda">CPF não pode ser alterado.</span>
+      }
+    </div>
+
+    <!-- Data de Nascimento -->
+    <div class="campo">
+      <label for="data">Data de Nascimento</label>
+      <input id="data" formControlName="data_nascimento" type="date" />
+      @if (form.get('data_nascimento')?.hasError('dataFutura') && form.get('data_nascimento')?.touched) {
+      <span class="erro-campo">Data de nascimento deve ser no passado.</span>
+      }
+    </div>
+
+    <!-- Plano -->
+    <div class="campo">
+      <label for="plano">Plano</label>
+      <select id="plano" formControlName="plano_id">
+        <option value="">Selecione um plano</option>
+        @for (plano of planos(); track plano.id) {
+        <option [value]="plano.id">{{ plano.nome }}</option>
+        }
+      </select>
+      @if (form.get('plano_id')?.invalid && form.get('plano_id')?.touched) {
+      <span class="erro-campo">Selecione um plano.</span>
+      }
+    </div>
+
+    <!-- Status (apenas na edição) -->
+    <div class="campo" *ngIf="isEdit()">
+      <label for="status">Status</label>
+      <select id="status" formControlName="status">
+        <option value="ATIVO">ATIVO</option>
+        <option value="INATIVO">INATIVO</option>
+      </select>
+    </div>
+
+    <!-- Botões -->
+    <div class="botoes">
+      <button type="submit" [disabled]="form.invalid || carregando()">
+        {{ isEdit() ? 'Atualizar' : 'Cadastrar' }}
+      </button>
+      <button type="button" (click)="cancelar()" [disabled]="carregando()">Cancelar</button>
+    </div>
+  </form>
+  }
+</section>

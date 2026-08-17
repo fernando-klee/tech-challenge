@@ -1,0 +1,106 @@
+.cartao {
+  background: #fff;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cabecalho h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+button {
+  border: 1px solid #c3c8d0;
+  background: #f6f7f9;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.aviso {
+  margin: 0;
+  color: #6b7280;
+}
+
+.aviso.erro {
+  color: #b42318;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.campo label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.campo input,
+.campo select {
+  border: 1px solid #c3c8d0;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  background: #fff;
+  max-width: 400px;
+}
+
+.campo input:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.erro-campo {
+  font-size: 0.85rem;
+  color: #b42318;
+}
+
+.ajuda {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.botoes {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.botoes button[type="submit"] {
+  background: #1f2937;
+  color: #fff;
+  border-color: #1f2937;
+}
+
+.botoes button[type="submit"]:disabled {
+  opacity: 0.5;
+}
+
+.botoes button[type="button"] {
+  background: #f6f7f9;
+}
