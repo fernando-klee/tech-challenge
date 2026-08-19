@@ -244,4 +244,63 @@ public class BeneficiariosTests(ApiFixture fixture) : IAsyncLifetime
         var corpo = await resposta.CorpoAsync();
         Assert.Equal("Beneficiario inativo nao pode ter dados alterados", corpo.GetProperty("mensagem").GetString());
     }
+
+    [Fact]
+    public async Task Listar_com_pagina_menor_que_1_deve_devolver_400()
+    {
+        var resposta = await Client.GetAsync("/beneficiarios?pagina=0");
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Listar_com_tamanho_maior_que_100_deve_devolver_400()
+    {
+        var resposta = await Client.GetAsync("/beneficiarios?tamanho=150");
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Listar_pagina_alem_do_total_deve_devolver_200_com_dados_vazios()
+    {
+        await fixture.SemearBeneficiariosAsync(5);
+        var resposta = await Client.GetAsync("/beneficiarios?pagina=10&tamanho=10");
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        var corpo = await resposta.CorpoAsync();
+        Assert.Empty(corpo.GetProperty("dados").EnumerateArray());
+        Assert.Equal(5, corpo.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task Listar_filtrar_apenas_por_status_deve_funcionar()
+    {
+        await fixture.SemearBeneficiariosAsync(3, Planos.Bronze, "ATIVO", 100);
+        await fixture.SemearBeneficiariosAsync(2, Planos.Bronze, "INATIVO", 200);
+        var corpo = await (await Client.GetAsync("/beneficiarios?status=ATIVO")).CorpoAsync();
+        Assert.Equal(3, corpo.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task Listar_filtrar_apenas_por_plano_deve_funcionar()
+    {
+        await fixture.SemearBeneficiariosAsync(3, Planos.Bronze, "ATIVO", 100);
+        await fixture.SemearBeneficiariosAsync(2, Planos.Prata, "ATIVO", 200);
+        var corpo = await (await Client.GetAsync($"/beneficiarios?plano_id={Planos.Bronze}")).CorpoAsync();
+        Assert.Equal(3, corpo.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task Reativar_beneficiario_inativo_deve_devolver_200()
+    {
+        var beneficiario = (await fixture.SemearBeneficiariosAsync(1, Planos.Bronze, "INATIVO", 300)).Single();
+        var resposta = await Client.PutAsync($"/beneficiarios/{beneficiario.Id}", Http.Json(new
+        {
+            NomeCompleto = beneficiario.NomeCompleto,
+            DataNascimento = beneficiario.DataNascimento.ToString("yyyy-MM-dd"),
+            PlanoId = Planos.Bronze,
+            Status = "ATIVO"
+        }));
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        var corpo = await resposta.CorpoAsync();
+        Assert.Equal("ATIVO", corpo.GetProperty("status").GetString());
+    }
 }
